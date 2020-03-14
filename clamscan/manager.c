@@ -64,6 +64,8 @@
 #include "libclamav/str.h"
 #include "libclamav/readdb.h"
 
+#include "rtiddsscan.h"
+
 #ifdef C_LINUX
 dev_t procdev;
 #endif
@@ -386,6 +388,7 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
     data.chain    = &chain;
     data.filename = filename;
     if ((ret = cl_scandesc_callback(fd, filename, &virname, &info.blocks, engine, options, &data)) == CL_VIRUS) {
+        RTIDDSScan_fileScanINFECTED(filename, virname);
         if (optget(opts, "archive-verbose")->enabled) {
             if (chain.nchains > 1) {
                 char str[128];
@@ -402,11 +405,13 @@ static void scanfile(const char *filename, struct cl_engine *engine, const struc
         if (bell)
             fprintf(stderr, "\007");
     } else if (ret == CL_CLEAN) {
+        RTIDDSScan_fileScanOK(filename);
         if (!printinfected && printclean)
             mprintf("~%s: OK\n", filename);
 
         info.files++;
     } else {
+        RTIDDSScan_fileScanERROR(filename, cl_strerror(ret));
         if (!printinfected)
             logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
 

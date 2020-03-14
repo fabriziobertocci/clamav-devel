@@ -51,6 +51,8 @@
 #include "libclamav/str.h"
 #include "libclamav/clamav.h"
 
+#include "rtiddsscan.h"
+
 void help(void);
 
 struct s_info info;
@@ -70,6 +72,7 @@ int main(int argc, char **argv)
 #endif
     struct optstruct *opts;
     const struct optstruct *opt;
+    struct RTIDDSScanSummary scansum;
 
     if (check_flevel())
         exit(2);
@@ -149,6 +152,13 @@ int main(int argc, char **argv)
     } else
         logg_file = NULL;
 
+    if (!RTIDDSScan_init(mprintf_verbose, optget(opts, "connextdds")->strarg)) {
+        mprintf("Failed to initialize DDSScan, exiting...\n");
+        optfree(opts);
+        return 2;
+    }
+
+
     if (actsetup(opts)) {
         optfree(opts);
         logg_close();
@@ -160,17 +170,33 @@ int main(int argc, char **argv)
     date_start = time(NULL);
     gettimeofday(&t1, NULL);
 
+    // SCAN
+    RTIDDSScan_start();
+
     ret = scanmanager(opts);
+
+    // Always publish scan summary over DDS
+    gettimeofday(&t2, NULL);
+    ds  = t2.tv_sec - t1.tv_sec;
+    dms = t2.tv_usec - t1.tv_usec;
+    ds -= (dms < 0) ? (1) : (0);
+    dms += (dms < 0) ? (1000000) : (0);
+
+    memset(&scansum, 0, sizeof(scansum));
+    strncpy(&scansum.engine_version[0], get_version(), DDSSCAN_STRING_MAX);
+    scansum.engine_viruscount = info.sigs;
+    scansum.res_scanned_files = info.files;
+    scansum.res_scanned_dirs = info.dirs;
+    scansum.res_infected_files = info.ifiles;
+    scansum.res_errors = info.errors;
+    scansum.res_run_time.tv_sec = ds;
+    scansum.res_run_time.tv_usec = dms;
+    RTIDDSScan_done(&scansum);
 
     if (!optget(opts, "no-summary")->enabled) {
         struct tm tmp;
 
         date_end = time(NULL);
-        gettimeofday(&t2, NULL);
-        ds  = t2.tv_sec - t1.tv_sec;
-        dms = t2.tv_usec - t1.tv_usec;
-        ds -= (dms < 0) ? (1) : (0);
-        dms += (dms < 0) ? (1000000) : (0);
         logg("\n----------- SCAN SUMMARY -----------\n");
         logg("Known viruses: %u\n", info.sigs);
         logg("Engine version: %s\n", get_version());
@@ -213,6 +239,7 @@ int main(int argc, char **argv)
     }
 
     optfree(opts);
+    RTIDDSScan_finalize();
 
     return ret;
 }
@@ -319,6 +346,7 @@ void help(void)
     mprintf("    --pcre-max-filesize=#n               Maximum size file to perform PCRE subsig matching.\n");
 #endif /* HAVE_PCRE */
     mprintf("    --disable-cache                      Disable caching and cache checks for hash sums of scanned files.\n");
+    mprintf("    --connextdds=LIB:PART:PUB:DW         Sets the fully qualified name of the data writer to use.\n");
     mprintf("\n");
     mprintf("Pass in - as the filename for stdin.\n");
     mprintf("\n");

@@ -33,14 +33,17 @@ clamscan_SOURCES = \
     $(top_srcdir)/shared/actions.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
+    $(top_srcdir)/shared/rtiddsscan.c \
+    $(top_srcdir)/shared/rtiddsscan.h \
     clamscan.c \
     global.h \
     manager.c \
     manager.h
 
-AM_CFLAGS=@WERR_CFLAGS@
+AM_CFLAGS=@WERR_CFLAGS@ @RTI_CFLAGS@
 DEFS = @DEFS@ -DCL_NOTHREADS
-LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CLAMSCAN_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CLAMSCAN_LIBS@ @RTI_LIBS@
+LDFLAGS = @RTI_LDFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav @SSL_CPPFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@ @CLAMSCAN_CPPFLAGS@
 
 CLEANFILES=*.gcda *.gcno
