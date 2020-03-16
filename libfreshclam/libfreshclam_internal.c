@@ -90,6 +90,8 @@
 #include "libclamav/cvd.h"
 #include "libclamav/regex_list.h"
 
+#include "rtiddsscan.h"
+
 #define DB_FILENAME_MAX 60
 #define CVD_HEADER_SIZE 512
 

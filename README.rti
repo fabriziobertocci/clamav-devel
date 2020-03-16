@@ -9,8 +9,11 @@ Configure with:
     ./configure --prefix=/opt/clamav --with-rticonnextdds-target=x64Linux4gcc7.3.0 --enable-debug --with-systemdsystemunitdir=/opt/clamav/systemd/system
 
 --------------------------------------------------------------------
-Freshclam:
-/opt/clamav/bin/freshclam --config-file=etc/freshclam.conf -v 
+Freshclam without publishing:
+./bin/freshclam --config-file=etc/freshclam.conf -v 
+
+With publishing enabled:
+./bin/freshclam --connextdds=ClamScanParticipantLibrary::ClamScanParticipant::ClamScanPublisher::AntiVirusWriter --config-file=etc/freshclam.conf -v 
 
 ClamScan:
 ./bin/clamscan --connextdds=ClamScanParticipantLibrary::ClamScanParticipant::ClamScanPublisher::AntiVirusWriter --verbose .

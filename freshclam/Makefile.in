@@ -205,8 +205,8 @@ am__installdirs = "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(systemdsystemunitdir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_freshclam_OBJECTS = optparser.$(OBJEXT) getopt.$(OBJEXT) \
-	misc.$(OBJEXT) clamdcom.$(OBJEXT) freshclam.$(OBJEXT) \
-	notify.$(OBJEXT) execute.$(OBJEXT)
+	misc.$(OBJEXT) clamdcom.$(OBJEXT) rtiddsscan.$(OBJEXT) \
+	freshclam.$(OBJEXT) notify.$(OBJEXT) execute.$(OBJEXT)
 freshclam_OBJECTS = $(am_freshclam_OBJECTS)
 freshclam_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -395,7 +395,7 @@ JSON_LDFLAGS = @JSON_LDFLAGS@
 JSON_LIBS = @JSON_LIBS@
 LCOV = @LCOV@
 LD = @LD@
-LDFLAGS = @LDFLAGS@
+LDFLAGS = @RTI_LDFLAGS@
 LEX = @LEX@
 LEXLIB = @LEXLIB@
 LEX_OUTPUT_ROOT = @LEX_OUTPUT_ROOT@
@@ -425,7 +425,7 @@ LIBPRELUDE_LDFLAGS = @LIBPRELUDE_LDFLAGS@
 LIBPRELUDE_LIBS = @LIBPRELUDE_LIBS@
 LIBPRELUDE_PREFIX = @LIBPRELUDE_PREFIX@
 LIBPRELUDE_PTHREAD_CFLAGS = @LIBPRELUDE_PTHREAD_CFLAGS@
-LIBS = @SSL_LDFLAGS@ @SSL_LIBS@ @CURL_LDFLAGS@ @CURL_LIBS@ $(top_builddir)/libclamav/libclamav.la $(top_builddir)/libfreshclam/libfreshclam.la @FRESHCLAM_LIBS@ @ZLIB_LIBS@ @THREAD_LIBS@
+LIBS = @SSL_LDFLAGS@ @SSL_LIBS@ @CURL_LDFLAGS@ @CURL_LIBS@ $(top_builddir)/libclamav/libclamav.la $(top_builddir)/libfreshclam/libfreshclam.la @FRESHCLAM_LIBS@ @RTI_LIBS@ @ZLIB_LIBS@ @THREAD_LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
@@ -575,6 +575,8 @@ freshclam_SOURCES = \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/clamdcom.h \
     $(top_srcdir)/shared/clamdcom.c \
+    $(top_srcdir)/shared/rtiddsscan.c \
+    $(top_srcdir)/shared/rtiddsscan.h \
     freshclam.c \
     notify.c \
     notify.h \
@@ -582,7 +584,7 @@ freshclam_SOURCES = \
     execute.h
 
 @INSTALL_SYSTEMD_UNITS_TRUE@systemdsystemunit_DATA = clamav-freshclam.service
-AM_CFLAGS = @WERR_CFLAGS@
+AM_CFLAGS = @WERR_CFLAGS@ @RTI_CFLAGS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav -I$(top_srcdir)/libfreshclam @CURL_CPPFLAGS@ @SSL_CPPFLAGS@ @FRESHCLAM_CPPFLAGS@ @ZLIB_CFLAGS@ @JSON_CPPFLAGS@ @PCRE_CPPFLAGS@
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = freshclam$(EXEEXT)
 CLEANFILES = *.gcda *.gcno
@@ -704,6 +706,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/notify.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtiddsscan.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -781,6 +784,20 @@ clamdcom.obj: $(top_srcdir)/shared/clamdcom.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/clamdcom.c' object='clamdcom.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o clamdcom.obj `if test -f '$(top_srcdir)/shared/clamdcom.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/clamdcom.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/clamdcom.c'; fi`
+
+rtiddsscan.o: $(top_srcdir)/shared/rtiddsscan.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT rtiddsscan.o -MD -MP -MF $(DEPDIR)/rtiddsscan.Tpo -c -o rtiddsscan.o `test -f '$(top_srcdir)/shared/rtiddsscan.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/rtiddsscan.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rtiddsscan.Tpo $(DEPDIR)/rtiddsscan.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/rtiddsscan.c' object='rtiddsscan.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o rtiddsscan.o `test -f '$(top_srcdir)/shared/rtiddsscan.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/rtiddsscan.c
+
+rtiddsscan.obj: $(top_srcdir)/shared/rtiddsscan.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT rtiddsscan.obj -MD -MP -MF $(DEPDIR)/rtiddsscan.Tpo -c -o rtiddsscan.obj `if test -f '$(top_srcdir)/shared/rtiddsscan.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/rtiddsscan.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/rtiddsscan.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/rtiddsscan.Tpo $(DEPDIR)/rtiddsscan.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$(top_srcdir)/shared/rtiddsscan.c' object='rtiddsscan.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o rtiddsscan.obj `if test -f '$(top_srcdir)/shared/rtiddsscan.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/rtiddsscan.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/rtiddsscan.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

@@ -159,6 +159,14 @@ fc_error_t fc_dns_query_update_info(
     char **dnsUpdateInfo,
     char **newVersion);
 
+
+// The following constants match the AntiVirus datamodel
+#define DBUPDATE_OPERATION_START            4
+#define DBUPDATE_OPERATION_SUCCESS          5
+#define DBUPDATE_OPERATION_ERROR            6
+
+// threatCount < 0 => invalid
+typedef int (* fc_onDatabaseUpdateCallback)(int opCode, const char *databaseFile, const char *version, int threatCount, const char *errMsg, void *arg);
 /**
  * @brief Download a database directly from a URL.
  *
@@ -172,7 +180,9 @@ fc_error_t fc_dns_query_update_info(
 fc_error_t fc_download_url_database(
     const char *urlDatabase,
     void *context,
-    int *bUpdated);
+    int *bUpdated,
+    fc_onDatabaseUpdateCallback dbCallback, 
+    void *dbCallbackArg);
 
 /**
  * @brief Download databases directly from a URLs.
@@ -187,7 +197,9 @@ fc_error_t fc_download_url_databases(
     char **urlDatabaseList,
     uint32_t nUrlDatabases,
     void *context,
-    uint32_t *nUpdated);
+    uint32_t *nUpdated,
+    fc_onDatabaseUpdateCallback dbCallback, 
+    void *dbCallbackArg);
 
 /**
  * @brief Update specific official database, given list of update servers.
@@ -209,7 +221,9 @@ fc_error_t fc_update_database(
     const char *dnsUpdateInfo,
     int bScriptedUpdates,
     void *context,
-    int *bUpdated);
+    int *bUpdated,
+    fc_onDatabaseUpdateCallback dbCallback, 
+    void *dbCallbackArg);
 
 /**
  * @brief Update list of official databases, given list of update servers.
@@ -233,7 +247,9 @@ fc_error_t fc_update_databases(
     const char *dnsUpdateInfo,
     int bScriptedUpdates,
     void *context,
-    uint32_t *nUpdated);
+    uint32_t *nUpdated,
+    fc_onDatabaseUpdateCallback dbCallback, 
+    void *dbCallbackArg);
 
 /* ----------------------------------------------------------------------------
  * Callback function type definitions.

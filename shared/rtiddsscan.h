@@ -32,4 +32,13 @@ void RTIDDSScan_fileScanINFECTED(const char *filename, const char *virname);
 void RTIDDSScan_fileScanOK(const char *filename);
 void RTIDDSScan_fileScanERROR(const char *filename, const char *error);
 
+// Invoked directly from the libfreshclam before and after updating each 
+// database file
+int RTIDDSScan_onDatabaseUpdated(int op, 
+        const char *dbName, 
+        const char *version,
+        int threatCount,
+        const char *errMsg,
+        void *arg);
+
 

@@ -7,6 +7,7 @@
 
 #include <time.h>
 
+#include <sys/types.h>
 #include <unistd.h>
 #include <ndds/ndds_c.h>
 
@@ -197,7 +198,6 @@ static RTIBool _composeOperationEvent(int eventId) {
         return RTI_FALSE;
     }
     return RTI_TRUE;
-    return RTI_TRUE;
 }
 
 /* }}} */
@@ -296,7 +296,7 @@ static RTIBool _writeFileScanEvent(const char *filename, const char *virname, co
     // Write!
     retCode = DDS_DynamicDataWriter_write(theAVEventWriter, theAVEventInstance, &DDS_HANDLE_NIL);
     if (retCode != DDS_RETCODE_OK) {
-        rtiddsscan_err("Malaware writer error: %d\n", retCode);
+        rtiddsscan_err("RTIDDS writer error: %d\n", retCode);
         return RTI_FALSE;
     }
     return RTI_TRUE;
@@ -406,7 +406,10 @@ void RTIDDSScan_done(const struct RTIDDSScanSummary *scanSummary) {
     DDS_ReturnCode_t retCode;
     char msg[1024];
 
-    _composeOperationEvent(LIFECYCLE_EVENT_COMPLETED);
+    if (!_composeOperationEvent(LIFECYCLE_EVENT_COMPLETED)) {
+        rtiddsscan_err("Failed to compose operation event\n");
+        return;
+    }
 
     // operation.database_version
     retCode = DDS_DynamicData_set_string(
@@ -504,6 +507,120 @@ void RTIDDSScan_fileScanOK(const char *filename) {
 void RTIDDSScan_fileScanERROR(const char *filename, const char *error) {
     rtiddsscan_log("Sending FileScan event (ERROR)...\n");
     _writeFileScanEvent(filename, NULL, error, FILESCAN_ACTION_ERROR);
+}
+/* }}} */
+
+/* {{{ RTIDDSScan_onDatabaseUpdated
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+int RTIDDSScan_onDatabaseUpdated(int op, 
+        const char *dbName, 
+        const char *version,
+        int threatCount,
+        const char *errMsg, 
+        void *arg) {
+    DDS_ReturnCode_t retCode;
+    const char *opStr;
+    switch(op) {
+        case 4: opStr = "DatabaseUpdateStart"; break;
+        case 5: opStr = "DatabaseUpdateSuccess"; break;
+        case 6: opStr = "DatabaseUpdateError"; break;
+        default:
+            rtiddsscan_err("Invalid op: %d\n", op);
+            abort();
+    }
+
+    rtiddsscan_log("Sending Operation event (%s)...\n", opStr);
+    if (!_composeOperationEvent(op)) {
+        rtiddsscan_err("Failed to compose operation event\n");
+        return 0;
+    }
+    if (dbName) {
+        retCode = DDS_DynamicData_set_string(
+                        theAVEventInstance,
+                        "operation.database",
+                        DDS_DYNAMIC_DATA_MEMBER_ID_UNSPECIFIED,
+                        dbName);
+        if (retCode != DDS_RETCODE_OK) {
+            rtiddsscan_err("Failed to set 'operation.database' property: %d\n", retCode);
+            return 0;
+        }
+    }
+
+    if (threatCount >= 0) {
+        retCode = DDS_DynamicData_set_ulong(
+                        theAVEventInstance,
+                        "operation.database_threat_count",
+                        DDS_DYNAMIC_DATA_MEMBER_ID_UNSPECIFIED,
+                        (unsigned long)threatCount);
+        if (retCode != DDS_RETCODE_OK) {
+            rtiddsscan_err("Failed to set 'operation.database_threat_count' property: %d\n", retCode);
+            return 0;
+        }
+    }
+    if (version) {
+        retCode = DDS_DynamicData_set_string(
+                        theAVEventInstance,
+                        "operation.database_version",
+                        DDS_DYNAMIC_DATA_MEMBER_ID_UNSPECIFIED,
+                        version);
+        if (retCode != DDS_RETCODE_OK) {
+            rtiddsscan_err("Failed to set 'operation.database_version' property: %d\n", retCode);
+            return 0;
+        }
+    }
+    if (errMsg) {
+        retCode = DDS_DynamicData_set_string(
+                        theAVEventInstance,
+                        "operation.message",
+                        DDS_DYNAMIC_DATA_MEMBER_ID_UNSPECIFIED,
+                        errMsg);
+        if (retCode != DDS_RETCODE_OK) {
+            rtiddsscan_err("Failed to set 'operation.message' property: %d\n", retCode);
+            return 0;
+        }
+    }
+
+    // Date is set only for successful operation
+    if (op == 5) {
+        time_t tNow = time(NULL);
+        retCode = DDS_DynamicData_set_ulong(
+                        theAVEventInstance,
+                        "operation.database_last_update.sec",
+                        DDS_DYNAMIC_DATA_MEMBER_ID_UNSPECIFIED,
+                        (unsigned long)tNow);
+        if (retCode != DDS_RETCODE_OK) {
+            rtiddsscan_err("Failed to set 'date' property: %d\n", retCode);
+            return 0;
+        }
+        retCode = DDS_DynamicData_set_ulong(
+                        theAVEventInstance,
+                        "operation.database_last_update.nanosec",
+                        DDS_DYNAMIC_DATA_MEMBER_ID_UNSPECIFIED,
+                        0UL);
+        if (retCode != DDS_RETCODE_OK) {
+            rtiddsscan_err("Failed to set 'operation.database_last_update' property: %d\n", retCode);
+            return 0;
+        }
+    }
+
+    // Set pid
+    retCode = DDS_DynamicData_set_ulonglong(
+                    theAVEventInstance,
+                    "operation.pid",
+                    DDS_DYNAMIC_DATA_MEMBER_ID_UNSPECIFIED,
+                    (unsigned long long)getpid());
+    if (retCode != DDS_RETCODE_OK) {
+        rtiddsscan_err("Failed to set 'operation.database_last_update' property: %d\n", retCode);
+        return 0;
+    }
+    // Write!
+    retCode = DDS_DynamicDataWriter_write(theAVEventWriter, theAVEventInstance, &DDS_HANDLE_NIL);
+    if (retCode != DDS_RETCODE_OK) {
+        rtiddsscan_err("RTIDDS writer error: %d\n", retCode);
+        return 0;
+    }
+    return 1;
 }
 /* }}} */
 

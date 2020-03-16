@@ -571,7 +571,9 @@ fc_error_t fc_update_database(
     const char *dnsUpdateInfo,
     int bScriptedUpdates,
     void *context,
-    int *bUpdated)
+    int *bUpdated,
+    fc_onDatabaseUpdateCallback dbCallback, 
+    void *dbCallbackArg)
 {
     fc_error_t ret;
     fc_error_t status = FC_EARG;
@@ -595,6 +597,10 @@ fc_error_t fc_update_database(
         goto done;
     }
     logg("*Current working dir is %s\n", g_databaseDirectory);
+
+    if(dbCallback) {
+        dbCallback(DBUPDATE_OPERATION_START, database, NULL, -1, NULL, dbCallbackArg);
+    }
 
     /*
      * Attempt to update official database using DatabaseMirrors or PrivateMirrors.
@@ -620,6 +626,9 @@ fc_error_t fc_update_database(
                     } else {
                         logg("*fc_update_database: %s already up-to-date.\n", dbFilename);
                     }
+                    if(dbCallback) {
+                        dbCallback(DBUPDATE_OPERATION_SUCCESS, database, NULL, signo, NULL, dbCallbackArg);
+                    }
                     goto success;
                 }
                 case FC_ECONNECTION:
@@ -634,6 +643,10 @@ fc_error_t fc_update_database(
                         if (i == nServers - 1) {
                             logg("!Update failed for database: %s\n", database);
                             status = ret;
+                            if(dbCallback) {
+                                // TODO: Send a more meaningful error message
+                                dbCallback(DBUPDATE_OPERATION_ERROR, database, NULL, -1, "Update failed", dbCallbackArg);
+                            }
                             goto done;
                         }
                     }
@@ -642,6 +655,10 @@ fc_error_t fc_update_database(
                 default: {
                     logg("!Unexpected error when attempting to update database: %s\n", database);
                     status = ret;
+                    if(dbCallback) {
+                        // TODO: Send a more meaningful error message
+                        dbCallback(DBUPDATE_OPERATION_ERROR, database, NULL, -1, "Unknown error when attempting to udpate database", dbCallbackArg);
+                    }
                     goto done;
                 }
             }
@@ -670,7 +687,9 @@ fc_error_t fc_update_databases(
     const char *dnsUpdateInfo,
     int bScriptedUpdates,
     void *context,
-    uint32_t *nUpdated)
+    uint32_t *nUpdated,
+    fc_onDatabaseUpdateCallback dbCallback, 
+    void *dbCallbackArg)
 {
     fc_error_t ret;
     fc_error_t status = FC_EARG;
@@ -694,7 +713,9 @@ fc_error_t fc_update_databases(
                                dnsUpdateInfo,
                                bScriptedUpdates,
                                context,
-                               &bUpdated))) {
+                               &bUpdated,
+                               dbCallback,
+                               dbCallbackArg))) {
             logg("^fc_update_databases: fc_update_database failed: %s (%d)\n", fc_strerror(ret), ret);
             status = ret;
             goto done;
@@ -715,7 +736,9 @@ done:
 fc_error_t fc_download_url_database(
     const char *urlDatabase,
     void *context,
-    int *bUpdated)
+    int *bUpdated,
+    fc_onDatabaseUpdateCallback dbCallback,
+    void *dbCallbackArg)
 {
     fc_error_t ret;
     fc_error_t status = FC_EARG;
@@ -738,6 +761,9 @@ fc_error_t fc_download_url_database(
     }
     logg("*Current working dir is %s\n", g_databaseDirectory);
 
+    if(dbCallback) {
+        dbCallback(DBUPDATE_OPERATION_START, urlDatabase, NULL, -1, NULL, dbCallbackArg);
+    }
     /*
      * Attempt to update official database using DatabaseMirrors or PrivateMirrors.
      */
@@ -759,6 +785,9 @@ fc_error_t fc_download_url_database(
                 } else {
                     logg("*fc_download_url_database: %s already up-to-date.\n", dbFilename);
                 }
+                if(dbCallback) {
+                    dbCallback(DBUPDATE_OPERATION_SUCCESS, urlDatabase, NULL, signo, NULL, dbCallbackArg);
+                }
                 goto success;
             }
             case FC_ECONNECTION:
@@ -770,6 +799,9 @@ fc_error_t fc_download_url_database(
                 } else {
                     logg("Update failed for custom database URL: %s\n", urlDatabase);
                     status = ret;
+                    if (dbCallback) {
+                        dbCallback(DBUPDATE_OPERATION_ERROR, urlDatabase, NULL, -1, "Update failed", dbCallbackArg);
+                    }
                     goto done;
                 }
                 break;
@@ -777,6 +809,9 @@ fc_error_t fc_download_url_database(
             default: {
                 logg("Unexpected error when attempting to update from custom database URL: %s\n", urlDatabase);
                 status = ret;
+                if (dbCallback) {
+                    dbCallback(DBUPDATE_OPERATION_ERROR, urlDatabase, NULL, -1, "Unexpected error when attempting to update database", dbCallbackArg);
+                }
                 goto done;
             }
         }
@@ -799,7 +834,9 @@ fc_error_t fc_download_url_databases(
     char **urlDatabaseList,
     uint32_t nUrlDatabases,
     void *context,
-    uint32_t *nUpdated)
+    uint32_t *nUpdated,
+    fc_onDatabaseUpdateCallback dbCallback, 
+    void *dbCallbackArg)
 {
     fc_error_t ret;
     fc_error_t status   = FC_EARG;
@@ -818,7 +855,9 @@ fc_error_t fc_download_url_databases(
         if (FC_SUCCESS != (ret = fc_download_url_database(
                                urlDatabaseList[i],
                                context,
-                               &bUpdated))) {
+                               &bUpdated,
+                               dbCallback,
+                               dbCallbackArg))) {
             logg("^fc_download_url_databases: fc_download_url_database failed: %s (%d)\n", fc_strerror(ret), ret);
             status = ret;
             goto done;

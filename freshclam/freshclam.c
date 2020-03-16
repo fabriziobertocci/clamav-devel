@@ -64,6 +64,8 @@
 #include "execute.h"
 #include "notify.h"
 
+#include "rtiddsscan.h"
+
 #define DEFAULT_SERVER_PORT 443
 
 int g_sigchildWait                      = 1;
@@ -171,6 +173,7 @@ static void help(void)
     printf("    --on-error-execute=COMMAND           Execute COMMAND if errors occurred\n");
     printf("    --on-outdated-execute=COMMAND        Execute COMMAND when software is outdated\n");
     printf("    --update-db=DBNAME                   Only update database DBNAME\n");
+    printf("    --connextdds=LIB:PART:PUB:DW         Sets the fully qualified name of the data writer to use.\n");
     printf("\n");
 }
 
@@ -1432,7 +1435,8 @@ fc_error_t perform_database_update(
     const char *onOutdatedExecute,
     int bDaemonized,
     char *notifyClamd,
-    fc_ctx *fc_context)
+    fc_ctx *fc_context,
+    int bConnextDDDSEnabled)
 {
     fc_error_t ret;
     fc_error_t status = FC_EARG;
@@ -1495,7 +1499,9 @@ fc_error_t perform_database_update(
             dnsUpdateInfo,
             bScriptedUpdates,
             (void *)fc_context,
-            &nUpdated);
+            &nUpdated,
+            (bConnextDDDSEnabled ? RTIDDSScan_onDatabaseUpdated : NULL),
+            NULL);
         if (FC_SUCCESS != ret) {
             logg("!Database update process failed: %s (%d)\n", fc_strerror(ret), ret);
             status = ret;
@@ -1512,7 +1518,9 @@ fc_error_t perform_database_update(
             urlDatabaseList,
             nUrlDatabases,
             (void *)fc_context,
-            &nUpdated);
+            &nUpdated,
+            (bConnextDDDSEnabled ? RTIDDSScan_onDatabaseUpdated : NULL),
+            NULL);
         if (FC_SUCCESS != ret) {
             logg("!Database update process failed: %s (%d)\n", fc_strerror(ret), ret);
             status = ret;
@@ -1579,6 +1587,7 @@ int main(int argc, char **argv)
     uint32_t nUrlDatabases = 0;
 
     int bPrune = 1;
+    int bConnextPublisher = 0;      /* 1=shutdown */
 
     fc_ctx fc_context = {0};
 
@@ -1803,6 +1812,24 @@ int main(int argc, char **argv)
         goto done;
     }
 
+    /* 
+     * RTI Connext DDS Init
+     */
+    {
+        char *connextddsArg = optget(opts, "connextdds")->strarg;
+        if (connextddsArg) {
+            mprintf("Initializing RTI ConnextDDS Publisher...\b");
+            if (!RTIDDSScan_init(optget(opts, "verbose")->enabled, connextddsArg)) {
+                mprintf("Failed to initialize RTIDDSScan, exiting...\n");
+                status = FC_EINIT;
+                goto done;
+            }
+            bConnextPublisher = 1;
+        } else {
+            mprintf("RTI ConnextDDS Publisher is NOT enabled\b");
+        }
+    }
+
     if (!optget(opts, "no-dns")->enabled && optget(opts, "DNSDatabaseInfo")->enabled) {
         dnsUpdateInfoServer = optget(opts, "DNSDatabaseInfo")->strarg;
     }
@@ -1835,7 +1862,8 @@ int main(int argc, char **argv)
             optget(opts, "OnOutdatedExecute")->enabled ? optget(opts, "OnOutdatedExecute")->strarg : NULL,
             optget(opts, "daemon")->enabled,
             optget(opts, "NotifyClamd")->active ? optget(opts, "NotifyClamd")->strarg : NULL,
-            &fc_context);
+            &fc_context,
+            bConnextPublisher);
         if (FC_SUCCESS != ret) {
             logg("!Update failed.\n");
             status = ret;
@@ -1921,7 +1949,8 @@ int main(int argc, char **argv)
                 optget(opts, "OnOutdatedExecute")->enabled ? optget(opts, "OnUpdateExecute")->strarg : NULL,
                 optget(opts, "daemon")->enabled,
                 optget(opts, "NotifyClamd")->active ? optget(opts, "NotifyClamd")->strarg : NULL,
-                &fc_context);
+                &fc_context,
+                bConnextPublisher);
             if (FC_SUCCESS != ret) {
                 logg("!Update failed.\n");
             }
@@ -1987,6 +2016,9 @@ done:
     if ((status > FC_UPTODATE) && (NULL != opts)) {
         if ((opt = optget(opts, "OnErrorExecute"))->enabled)
             execute("OnErrorExecute", opt->strarg, optget(opts, "daemon")->enabled);
+    }
+    if (bConnextPublisher) {
+        RTIDDSScan_finalize();
     }
 
     logg_close();
