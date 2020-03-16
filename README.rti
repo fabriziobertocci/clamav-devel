@@ -3,3 +3,14 @@ Initial hash is: df636bf262636a6285efb1afb2040462959f53e6
 Forked on 3/13/2020
 
 
+--------------------------------------------------------------------
+To develop, install under /opt/clamav.
+Configure with:
+    ./configure --prefix=/opt/clamav --with-rticonnextdds-target=x64Linux4gcc7.3.0 --enable-debug --with-systemdsystemunitdir=/opt/clamav/systemd/system
+
+--------------------------------------------------------------------
+Freshclam:
+/opt/clamav/bin/freshclam --config-file=etc/freshclam.conf -v 
+
+ClamScan:
+./bin/clamscan --connextdds=ClamScanParticipantLibrary::ClamScanParticipant::ClamScanPublisher::AntiVirusWriter --verbose .

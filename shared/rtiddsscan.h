@@ -3,11 +3,11 @@
 
 
 
-#define DDSSCAN_STRING_MAX  100
+#define DDSSCAN_VERSION_STRING_MAX  30
 
 struct RTIDDSScanSummary {
     // Virus knowledge base
-    char                engine_version[30];
+    char                engine_version[DDSSCAN_VERSION_STRING_MAX+1];
     unsigned long       engine_viruscount;
     unsigned long       engine_lastupdate;                      // UTC
     

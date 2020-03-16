@@ -183,7 +183,7 @@ int main(int argc, char **argv)
     dms += (dms < 0) ? (1000000) : (0);
 
     memset(&scansum, 0, sizeof(scansum));
-    strncpy(&scansum.engine_version[0], get_version(), DDSSCAN_STRING_MAX);
+    strncpy(&scansum.engine_version[0], get_version(), sizeof(scansum.engine_version)-1);
     scansum.engine_viruscount = info.sigs;
     scansum.res_scanned_files = info.files;
     scansum.res_scanned_dirs = info.dirs;

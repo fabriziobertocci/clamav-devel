@@ -672,6 +672,9 @@ OBJCDEPMODE
 ac_ct_OBJC
 OBJCFLAGS
 OBJC
+RTI_LIBS
+RTI_LDFLAGS
+RTI_CFLAGS
 HAVE_STRNI
 CURL_LDFLAGS
 CURL_LIBS
@@ -1019,6 +1022,9 @@ with_libprelude_prefix
 enable_clamonacc
 with_libcurl
 enable_strni
+with_rticonnextdds
+with_rticonnextdds_static
+with_rticonnextdds_target
 enable_largefile
 '
       ac_precious_vars='build_alias
@@ -1802,6 +1808,13 @@ Optional Packages:
   --with-libcurl[=DIR]    path to directory containing libcurl
                           [default=/usr/local or /usr if not found in
                           /usr/local]
+  --with-rticonnextdds    specify the location of RTI Connext DDS (optional)
+  --with-rticonnextdds-static
+                          uses RTI static libraries instead of dynamic libs
+  --with-rticonnextdds-target
+                          specify the target architecture for RTI Connext DDS
+                          (required). Use 'connext-config --list-all' to view
+                          the supported targets
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -30215,6 +30228,162 @@ $as_echo "#define HAVE_STRNI 1" >>confdefs.h
 
 
 fi
+
+
+
+
+
+
+
+# Check whether --with-rticonnextdds was given.
+if test "${with_rticonnextdds+set}" = set; then :
+  withval=$with_rticonnextdds;
+        if test "${withval}" = "yes"; then
+            as_fn_error $? "missing argument for --with-connextdds parameter" "$LINENO" 5;
+        else
+            NDDSHOME=`realpath "${withval}"`
+        fi
+
+else
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Checking for NDDSHOME..." >&5
+$as_echo "Checking for NDDSHOME..." >&6; }
+        if test "a${NDDSHOME}a" = "aa"; then
+            as_fn_error $? "NDDSHOME not defined. You must specify the --with-connextdds argument" "$LINENO" 5;
+        else
+            NDDSSHOME="${NDDSHOME}"
+        fi
+
+fi
+
+
+as_ac_File=`$as_echo "ac_cv_file_"${NDDSHOME}/include/ndds/ndds_c.h"" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"${NDDSHOME}/include/ndds/ndds_c.h\"" >&5
+$as_echo_n "checking for \"${NDDSHOME}/include/ndds/ndds_c.h\"... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r ""${NDDSHOME}/include/ndds/ndds_c.h""; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Found RTI Connext DDS at ${NDDSHOME}" >&5
+$as_echo "Found RTI Connext DDS at ${NDDSHOME}" >&6; }
+
+else
+
+        as_fn_error $? "RTI Connext DDS not found or NDDSHOME not defined" "$LINENO" 5
+
+fi
+
+
+as_ac_File=`$as_echo "ac_cv_file_"${NDDSHOME}/bin/connext-config"" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for \"${NDDSHOME}/bin/connext-config\"" >&5
+$as_echo_n "checking for \"${NDDSHOME}/bin/connext-config\"... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r ""${NDDSHOME}/bin/connext-config""; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Successfully validated connext-config " >&5
+$as_echo "Successfully validated connext-config " >&6; }
+
+else
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: " >&5
+$as_echo "" >&6; }
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: Cannot find connext-config utility installed on your RTI Connext DDS home directory" >&5
+$as_echo "Cannot find connext-config utility installed on your RTI Connext DDS home directory" >&6; }
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: For more info see: https://github.com/fabriziobertocci/connext-config" >&5
+$as_echo "For more info see: https://github.com/fabriziobertocci/connext-config" >&6; }
+   as_fn_error $? "" "$LINENO" 5
+
+fi
+
+
+
+RTICFG_STATIC=""
+
+# Check whether --with-rticonnextdds-static was given.
+if test "${with_rticonnextdds_static+set}" = set; then :
+  withval=$with_rticonnextdds_static;
+        RTICFG_STATIC="--static"
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Using RTI ConnextDDS STATIC libraries" >&5
+$as_echo "Using RTI ConnextDDS STATIC libraries" >&6; }
+
+else
+
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Using RTI ConnextDDS DYNAMIC libraries" >&5
+$as_echo "Using RTI ConnextDDS DYNAMIC libraries" >&6; }
+
+
+fi
+
+
+
+
+
+# Check whether --with-rticonnextdds-target was given.
+if test "${with_rticonnextdds_target+set}" = set; then :
+  withval=$with_rticonnextdds_target;
+        if test "${withval}" = "yes"; then
+            as_fn_error $? "missing argument for --enable-target parameter" "$LINENO" 5;
+        else
+            if test -z `connext-config --list-all | grep ${withval}`; then
+                as_fn_error $? "invalid or unsupported target type" "$LINENO" 5;
+            fi
+            if test $? -ne 0; then
+                as_fn_error check log for details "error invoking connext-config" "$LINENO" 5
+            fi
+            { $as_echo "$as_me:${as_lineno-$LINENO}: result: Using connext-config to get compiler and linker settings..." >&5
+$as_echo "Using connext-config to get compiler and linker settings..." >&6; }
+            if test "$DEBUG_ENABLED" = 1; then
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: Using RTI ConnextDDS DEBUG libraries" >&5
+$as_echo "Using RTI ConnextDDS DEBUG libraries" >&6; }
+                RTICFG_DEBUG="--debug"
+            else
+                { $as_echo "$as_me:${as_lineno-$LINENO}: result: Using RTI ConnextDDS RELEASE libraries" >&5
+$as_echo "Using RTI ConnextDDS RELEASE libraries" >&6; }
+                RTICFG_DEBUG=""
+            fi
+            # CC="`connext-config --ccomp ${withval}`"
+            # LD="`connext-config --clink ${withval}`"
+            RTI_CFLAGS="$CFLAGS `connext-config $RTICFG_STATIC $RTICFG_DEBUG --cflags ${withval}`"
+            RTI_LDFLAGS="`connext-config $RTICFG_STATIC $RTICFG_DEBUG --ldflags ${withval}`"
+            RTI_LIBS="$LDFLAGS `connext-config $RTICFG_STATIC $RTICFG_DEBUG --ldlibs ${withval}`"
+        fi
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: Building for target ${withval} system" >&5
+$as_echo "Building for target ${withval} system" >&6; }
+
+else
+
+        as_fn_error $? "you must specify --enable-target with a valid target. See --help for more info" "$LINENO" 5
+
+fi
+
+
+
+
 
 
 

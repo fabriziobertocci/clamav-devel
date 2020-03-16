@@ -12,7 +12,9 @@
 
 #include "rtiddsscan.h"
 
-#define LOGPREFIX           "[DDSSCAN] "
+#define RTIDDSSCAN_VERSION          "1.0a"
+
+#define LOGPREFIX           "[RTIDDS] "
 #define rtiddsscan_log(msg, ...)   if (theVerbose) fprintf(stdout, LOGPREFIX msg, ##__VA_ARGS__ )
 #define rtiddsscan_err(msg, ...)   fprintf(stderr, LOGPREFIX msg, ##__VA_ARGS__ )
 
@@ -59,13 +61,13 @@ static RTIBool _parseDataWriterName(char *dwName, char *ddsEntityOut[2]) {
     char *ptr;
     ptr = strstr(dwName, "::");
     if (!ptr) {
-        rtiddsscan_err("Invalid data writer name (cannot locate partLib)");
+        rtiddsscan_err("Invalid data writer name (cannot locate partLib)\n");
         return RTI_FALSE;
     }
     ptr += 2;  // Skip the '::'
     ptr = strstr(ptr, "::");
     if (!ptr) {
-        rtiddsscan_err("Invalid data writer name (cannot locate partName)");
+        rtiddsscan_err("Invalid data writer name (cannot locate partName)\n");
         return RTI_FALSE;
     }
     *ptr = '\0';
@@ -208,7 +210,7 @@ static RTIBool _writeFileScanEvent(const char *filename, const char *virname, co
     if (!_createAVEventInstance()) {
         return RTI_FALSE;
     }
-    if (!_setClientId(theAVEventInstance, "event")) {
+    if (!_setClientId(theAVEventInstance, "scan")) {
         return RTI_FALSE;
     }
 
@@ -222,7 +224,7 @@ static RTIBool _writeFileScanEvent(const char *filename, const char *virname, co
         }
         retCode = DDS_DynamicData_set_string(
                         theAVEventInstance,
-                        "event.file_path",
+                        "scan.file_path",
                         DDS_DYNAMIC_DATA_MEMBER_ID_UNSPECIFIED,
                         path);
         if (retCode != DDS_RETCODE_OK) {
@@ -256,7 +258,7 @@ static RTIBool _writeFileScanEvent(const char *filename, const char *virname, co
         }
         retCode = DDS_DynamicData_set_ulong(
                         theAVEventInstance,
-                        "scan.date.millisec",
+                        "scan.date.nanosec",
                         DDS_DYNAMIC_DATA_MEMBER_ID_UNSPECIFIED,
                         0UL);
         if (retCode != DDS_RETCODE_OK) {
@@ -317,11 +319,17 @@ int RTIDDSScan_init(int verbose, char *name) {
 
     int ok = 0;
     theVerbose = (verbose > 0);
+
+    if (name == NULL) {
+        rtiddsscan_err("Missing data writer name\n");
+        goto done;
+    }
+
     if (!_parseDataWriterName(name, entityName)) {
         goto done;
     }
 
-    rtiddsscan_log("Initializing DDS Subsystem: part='%s', dw='%s'\n", entityName[0], entityName[1]);
+    rtiddsscan_log("Initializing DDS Subsystem (version %s): part='%s', dw='%s'\n", RTIDDSSCAN_VERSION, entityName[0], entityName[1]);
     theDomainParticipant = DDS_DomainParticipantFactory_create_participant_from_config(
             DDS_TheParticipantFactory,
             entityName[0]);
