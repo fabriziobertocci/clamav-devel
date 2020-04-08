@@ -83,7 +83,12 @@ static int checkaccess(const char *path, const char *username, int mode)
     int ret = 0, status;
 
     if (!geteuid()) {
-        if ((user = getpwnam(username)) == NULL) {
+        if (username) {
+            user = getpwnam(username);
+        } else {
+            user = getpwuid(getuid());
+        }
+        if (user == NULL) {
             return -1;
         }
 
