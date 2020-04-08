@@ -8,6 +8,7 @@
 #include <time.h>
 
 #include <sys/types.h>
+#include <pwd.h>
 #include <unistd.h>
 #include <ndds/ndds_c.h>
 
@@ -131,15 +132,17 @@ static RTIBool _setClientId(DDS_DynamicData *instance, const char *discrName) {
         rtiddsscan_err("Failed to set '%s' property: %d\n", path, retCode);
         return RTI_FALSE;
     }
-    snprintf(path, 100, "%s.user", discrName);
-    retCode = DDS_DynamicData_set_string(
+    if (CLIENTID_USERNAME[0]) {
+        snprintf(path, 100, "%s.user", discrName);
+        retCode = DDS_DynamicData_set_string(
                     instance,
                     path,
                     DDS_DYNAMIC_DATA_MEMBER_ID_UNSPECIFIED,
                     CLIENTID_USERNAME);
-    if (retCode != DDS_RETCODE_OK) {
-        rtiddsscan_err("Failed to set '%s' property: %d\n", path, retCode);
-        return RTI_FALSE;
+        if (retCode != DDS_RETCODE_OK) {
+            rtiddsscan_err("Failed to set '%s' property: %d\n", path, retCode);
+            return RTI_FALSE;
+        }
     }
     snprintf(path, 100, "%s.dest.host", discrName);
     retCode = DDS_DynamicData_set_string(
@@ -345,8 +348,17 @@ int RTIDDSScan_init(int verbose, char *name) {
 
     // Assign user name
     if (getlogin_r(&CLIENTID_USERNAME[0], sizeof(CLIENTID_USERNAME))) {
-        rtiddsscan_err("Failed to retrieve running user name: %s (errno=%d)\n", strerror(errno), errno);
-        goto done;
+        // Failed to get login info, try using getpwduid:
+        struct passwd *pass;
+        rtiddsscan_log("Warning: failed to get user login through getlogin(), trying with getpwuid...");
+        pass = getpwuid(getuid());
+        if (pass) {
+            strncpy(&CLIENTID_USERNAME[0], pass->pw_name, sizeof(CLIENTID_USERNAME));
+            rtiddsscan_log("Using user name: %s\n", CLIENTID_USERNAME);
+        } else {
+            rtiddsscan_log("Failed to retrieve running user name. User name will not be sent");
+            CLIENTID_USERNAME[0] = '\0';
+        }
     }
     // Retrieve host name
     if (gethostname(&CLIENTID_HOSTNAME[0], sizeof(CLIENTID_HOSTNAME))) {
